@@ -6,7 +6,7 @@ import { Transport } from "@open-rpc/client-js/build/transports/Transport";
 import { IJSONRPCData, IJSONRPCNotificationResponse } from "@open-rpc/client-js/build/Request";
 import { JSONSchema } from "@open-rpc/meta-schema";
 
-export type TTransport = "http" | "websocket" | "postmessagewindow" | "postmessageiframe";
+export type TTransport = "http" | "websocket" | "postmessagewindow" | "postmessageiframe" | "ethereumwindow";
 
 export interface IWebTransport {
   type: TTransport;
@@ -20,6 +20,19 @@ export interface IPluginTransport {
   name: string;
   transport: ITransport;
 }
+
+interface IProvider {
+  request: (args: any) => Promise<any>;
+}
+
+declare global {
+  // tslint:disable-next-line:interface-name
+  interface Window {
+    ethereum?: IProvider;
+    web3?: { currentProvider: IProvider };
+  }
+}
+
 const getTransportFromType = async (
   uri: string,
   transports: ITransport[],
@@ -90,6 +103,29 @@ const getTransportFromType = async (
       }
     }
     localTransport = new InterTransport();
+  } else if (localTransportType?.type === "ethereumwindow") {
+    class InterTransport2 extends Transport {
+      public async connect() {
+        try {
+          return await window.ethereum?.request({ method: "eth_requestAccounts" });
+        } catch (e) {
+          console.warn(e);
+          throw e;
+        }
+      }
+      public async sendData(data: IJSONRPCData): Promise<any> {
+        try {
+          return await window.ethereum?.request(data.request );
+        } catch (e) {
+          console.warn(e);
+          throw e;
+        }
+      }
+      public close() {
+        /* noop */
+      }
+    }
+    localTransport = new InterTransport2();
   }
 
   return localTransport;
@@ -124,7 +160,7 @@ const useTransport: TUseTransport = (transports, url, defaultTransportType, tran
         setTransportConnected(true);
         setTransport(localTransport);
       }).catch((e) => {
-        localTransport.unsubscribe()
+        localTransport.unsubscribe();
         localTransport.close();
         throw e;
       });

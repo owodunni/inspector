@@ -1,6 +1,6 @@
 {
   "name": "@owodunni/inspector",
-  "version": "0.0.0-development",
+  "version": "0.0.3-development",
   "description": "",
   "main": "package/index.js",
   "files": [

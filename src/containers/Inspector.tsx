@@ -45,6 +45,10 @@ const useCustomTransportList = createPersistedState("inspector-custom-transports
 
 const defaultTransports: ITransport[] = [
   {
+    type: "ethereumwindow",
+    name: "Ethereum",
+  },
+  {
     type: "http",
     name: "HTTP",
     schema: {
